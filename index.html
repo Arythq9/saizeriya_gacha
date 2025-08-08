@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サイゼリヤガチャ Ver.2</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            margin: 0 auto;
+            max-width: 600px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h1 {
+            color: #006400;
+            text-align: center;
+            border-bottom: 2px solid #006400;
+            padding-bottom: 10px;
+        }
+        #options-area {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+        }
+        .option-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .option-group label {
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        #no-alcohol-check {
+            width: 16px;
+            height: 16px;
+        }
+        #budget-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .budget-button {
+            display: block;
+            width: 100%;
+            padding: 15px 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: white;
+            background-color: #d9534f;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .budget-button:hover {
+            background-color: #c9302c;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            min-height: 100px;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed #eee;
+        }
+        .result-item:last-child { border-bottom: none; }
+        .total {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 2px solid #333;
+            font-weight: bold;
+            font-size: 1.2em;
+            text-align: right;
+        }
+        .category-tag {
+            font-size: 0.8em;
+            padding: 2px 6px;
+            background-color: #f0f0f0;
+            border-radius: 3px;
+            color: #555;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>サイゼリヤガチャ Ver.2</h1>
+
+    <div id="options-area">
+        <div class="option-group">
+            <label for="no-alcohol-check">オプション:</label>
+            <input type="checkbox" id="no-alcohol-check">
+            <label for="no-alcohol-check" style="font-weight: normal; margin-left: 5px;">アルコールを含まない</label>
+        </div>
+        <div id="budget-buttons">
+            <button class="budget-button" data-budget="500">500円ガチャ</button>
+            <button class="budget-button" data-budget="700">700円ガチャ</button>
+            <button class="budget-button" data-budget="1000">1000円ガチャ</button>
+            <button class="budget-button" data-budget="1500">1500円ガチャ</button>
+        </div>
+    </div>
+
+    <div id="result">
+        <p>上のボタンを押してガチャを回してください。</p>
+    </div>
+
+    <script>
+        // メニューリスト：アルコールを識別するため、ワインのカテゴリを'alcohol'に変更
+        const menuItems = [
+            // サラダ・前菜
+            { name: '小エビのサラダ', price: 350, category: 'salad' },
+            { name: 'チキンのサラダ', price: 350, category: 'salad' },
+            { name: 'わかめのサラダ', price: 350, category: 'salad' },
+            { name: '柔らか青豆の温サラダ', price: 200, category: 'appetizer' },
+            { name: 'ほうれん草のソテー', price: 200, category: 'appetizer' },
+            { name: '辛味チキン', price: 300, category: 'appetizer' },
+            { name: 'ポップコーンシュリンプ', price: 300, category: 'appetizer' },
+            { name: 'エスカルゴのオーブン焼き', price: 400, category: 'appetizer' },
+            { name: 'チョリソー（辛味ソーセージ）', price: 400, category: 'appetizer' },
+            { name: 'ハモン・セラーノ(生ハム)', price: 320, category: 'appetizer' },
+            { name: '生ハムとバッファローモッツァレラの盛合せ', price: 500, category: 'appetizer' },
+            { name: 'ポテトのグリル', price: 250, category: 'appetizer' },
+            { name: 'バッファローモッツァレラのカプレーゼ', price: 430, category: 'appetizer' },
+            { name: '蒸し鶏の香味ソース', price: 280, category: 'appetizer' },
+            { name: '小エビのカクテル', price: 280, category: 'appetizer' },
+            { name: 'キャロットラペ', price: 200, category: 'appetizer' },
+            { name: 'アロスティチーニ', price: 400, category: 'appetizer' },
+            { name: 'アロスティチーニ(Wサイズ)', price: 800, category: 'appetizer' },
+            { name: 'ムール貝のガーリック焼き', price: 400, category: 'appetizer' },
+            // スープ
+            { name: 'コーンクリームスープ', price: 150, category: 'appetizer' },
+            { name: '冷たいパンプキンスープ(季節限定)', price: 180, category: 'appetizer' },
+            { name: 'たまねぎのズッパ', price: 300, category: 'appetizer' },
+            { name: '田舎風ミネストローネ', price: 300, category: 'appetizer' },
+            // ピザ
+            { name: 'バッファローモッツァレラのマルゲリータピザ', price: 400, category: 'pizza' },
+            { name: 'ソーセージピザ', price: 400, category: 'pizza' },
+            { name: 'たっぷりコーンのピザ', price: 400, category: 'pizza' },
+            { name: '野菜ときのこのピザ', price: 400, category: 'pizza' },
+            // ドリア・グラタン
+            { name: 'ミラノ風ドリア', price: 300, category: 'doria' },
+            { name: '半熟卵のミラノ風ドリア', price: 350, category: 'doria' },
+            { name: '焼チーズ ミラノ風ドリア', price: 350, category: 'doria' },
+            { name: 'タラコとポップコーンシュリンプのドリア', price: 400, category: 'doria' },
+            { name: 'ポップコーンシュリンプとタラコのクリームグラタン', price: 430, category: 'doria' },
+            // パスタ
+            { name: 'ペペロンチーノ', price: 300, category: 'pasta' },
+            { name: '半熟卵のペペロンチーノ', price: 350, category: 'pasta' },
+            { name: 'タラコソースシシリー風', price: 400, category: 'pasta' },
+            { name: '小エビのタラコソース', price: 540, category: 'pasta' },
+            { name: 'カルボナーラ', price: 500, category: 'pasta' },
+            { name: '半熟卵のカルボナーラ', price: 550, category: 'pasta' },
+            { name: 'イカの墨入りセピアソース', price: 500, category: 'pasta' },
+            { name: 'パルマ風スパゲッティ', price: 400, category: 'pasta' },
+            { name: 'きのことほうれん草のクリームスパゲッティ', price: 600, category: 'pasta' },
+            { name: 'ミートソースボロニア風', price: 400, category: 'pasta' },
+            { name: '半熟卵のミートソースボロニア風', price: 450, category: 'pasta' },
+            { name: 'スープ入り塩味ボンゴレ', price: 500, category: 'pasta' },
+            { name: 'ペンネアラビアータ', price: 430, category: 'pasta' },
+            // 肉料理
+            { name: '若鶏のディアボラ風', price: 500, category: 'meat' },
+            { name: '柔らかチキンのチーズ焼き', price: 500, category: 'meat' },
+            { name: 'ハンバーグステーキ', price: 400, category: 'meat' },
+            { name: 'ディアボラ風ハンバーグ', price: 500, category: 'meat' },
+            { name: 'イタリアンハンバーグ', price: 500, category: 'meat' },
+            { name: 'ミックスグリル', price: 650, category: 'meat' },
+            { name: 'ラム(仔羊)のグリル', price: 870, category: 'meat' },
+            // ライス・パン
+            { name: 'ライス', price: 150, category: 'rice' },
+            { name: 'スモールライス', price: 100, category: 'rice' },
+            { name: 'ラージライス', price: 200, category: 'rice' },
+            { name: 'フォッカチオ', price: 150, category: 'rice' },
+            { name: 'ガーリックフォッカチオ', price: 200, category: 'rice' },
+            { name: 'シナモンフォッカチオ', price: 200, category: 'rice' },
+            { name: 'チーズフォッカチオ', price: 250, category: 'rice'}, 
+            // デザート
+            { name: 'ティラミス クラシコ', price: 300, category: 'dessert' },
+            { name: 'イタリアンプリン', price: 250, category: 'dessert' },
+            { name: 'プリンとティラミス クラシコの盛合せ', price: 500, category: 'dessert' },
+            { name: 'チョコレートケーキ', price: 300, category: 'dessert' },
+            { name: 'ミルクジェラート', price: 250, category: 'dessert' },
+            { name: 'チョコレートケーキ&ミルクジェラート', price: 500, category: 'dessert' },
+            { name: 'トリフアイスクリーム', price: 350, category: 'dessert' },
+            { name: 'コーヒーゼリー&ミルクジェラート', price: 350, category: 'dessert' },
+            { name: 'ジェラート&シナモンフォッカチオ', price: 450, category: 'dessert' },
+            // ドリンク
+            { name: 'セットドリンクバー', price: 200, category: 'drink' },
+            { name: 'グラスワイン(赤・白)', price: 100, category: 'alcohol' },
+            { name: 'デカンタ(250ml)', price: 200, category: 'alcohol' },
+            { name: 'デカンタ(500ml)', price: 400, category: 'alcohol' },
+            { name: 'マグナム(1500ml)', price: 1100, category: 'alcohol' },
+        ];
+
+        const budgetButtons = document.querySelectorAll('.budget-button');
+        const noAlcoholCheckbox = document.getElementById('no-alcohol-check');
+        const resultDiv = document.getElementById('result');
+
+        // 各予算ボタンにイベントリスナーを設定
+        budgetButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const budget = parseInt(button.dataset.budget, 10);
+                runGacha(budget);
+            });
+        });
+
+        // ガチャを実行するメインの関数
+        function runGacha(budget) {
+            let currentMenu = menuItems;
+
+            // 「アルコールを含まない」にチェックがあれば、アルコールを除外したリストを作成
+            if (noAlcoholCheckbox.checked) {
+                currentMenu = menuItems.filter(item => item.category !== 'alcohol');
+            }
+
+            let totalPrice = 0;
+            const orderList = [];
+
+            // 絞り込んだメニューリストをランダムに並び替え
+            const shuffledMenu = [...currentMenu].sort(() => Math.random() - 0.5);
+
+            for (const item of shuffledMenu) {
+                if (totalPrice + item.price <= budget) {
+                    orderList.push(item);
+                    totalPrice += item.price;
+                }
+            }
+            
+            displayResult(orderList, totalPrice, budget);
+        }
+        
+        // 結果を表示する関数
+        function displayResult(order, total, budget) {
+            resultDiv.innerHTML = ''; // 表示エリアをリセット
+
+            if (order.length === 0) {
+                resultDiv.innerHTML = `<p>¥${budget}で選べるメニューがありませんでした...。</p>`;
+                return;
+            }
+
+            order.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'result-item';
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = item.name;
+                
+                const categorySpan = document.createElement('span');
+                categorySpan.className = 'category-tag';
+                categorySpan.textContent = item.category;
+                nameSpan.appendChild(categorySpan);
+
+                const priceSpan = document.createElement('span');
+                priceSpan.textContent = `¥${item.price}`;
+                
+                itemDiv.appendChild(nameSpan);
+                itemDiv.appendChild(priceSpan);
+                resultDiv.appendChild(itemDiv);
+            });
+
+            const totalDiv = document.createElement('div');
+            totalDiv.className = 'total';
+            totalDiv.textContent = `合計金額: ¥${total}`;
+            resultDiv.appendChild(totalDiv);
+        }
+    </script>
+</body>
+</html>
